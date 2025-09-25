@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use clap::Parser;
+use wad::parse_wad;
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -11,5 +12,5 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    dbg!(args);
+    parse_wad(args.wad_file, args.output).unwrap();
 }
