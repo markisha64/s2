@@ -1,3 +1,121 @@
-fn main() {
-    println!("Hello, world!");
+use std::{
+    fs::{self, File},
+    path::PathBuf,
+    process::Command,
+};
+
+use clap::{Parser, Subcommand};
+use wad::parse_wad;
+
+#[derive(Parser, Debug)]
+struct Args {
+    #[command(subcommand)]
+    command: SubCommand,
+}
+
+#[derive(Subcommand, Debug)]
+enum SubCommand {
+    /// Unpack and prepare
+    Unpack {
+        /// Target game bin file
+        target_bin: PathBuf,
+    },
+}
+
+const LEVELS: [&str; 58] = [
+    "level_10_summer_forest_code.ovl",
+    "level_10_summer_forest_data.wad",
+    "level_11_glimmer_code.ovl",
+    "level_11_glimmer_data.wad",
+    "level_12_idol_springs_code.ovl",
+    "level_12_idol_springs_data.wad",
+    "level_13_colossus_code.ovl",
+    "level_13_colossus_data.wad",
+    "level_21_hurricos_code.ovl",
+    "level_21_hurricos_data.wad",
+    "level_22_aquaria_towers_code.ovl",
+    "level_22_aquaria_towers_data.wad",
+    "level_23_sunny_beach_code.ovl",
+    "level_23_sunny_beach_data.wad",
+    "level_25_ocean_speedway_code.ovl",
+    "level_25_ocean_speedway_data.wad",
+    "level_26_crushs_dungeon_code.ovl",
+    "level_26_crushs_dungeon_data.wad",
+    "level_30_autumn_plains_code.ovl",
+    "level_30_autumn_plains_data.wad",
+    "level_31_skelos_badlands_code.ovl",
+    "level_31_skelos_badlands_data.wad",
+    "level_32_crystal_glacier_code.ovl",
+    "level_32_crystal_glacier_data.wad",
+    "level_33_breeze_harbor_code.ovl",
+    "level_33_breeze_harbor_data.wad",
+    "level_34_zephyr_code.ovl",
+    "level_34_zephyr_data.wad",
+    "level_35_metro_speedway_code.ovl",
+    "level_35_metro_speedway_data.wad",
+    "level_41_scorch_code.ovl",
+    "level_41_scorch_data.wad",
+    "level_42_shady_oasis_code.ovl",
+    "level_42_shady_oasis_data.wad",
+    "level_43_magma_cone_code.ovl",
+    "level_43_magma_cone_data.wad",
+    "level_44_fracture_hills_code.ovl",
+    "level_44_fracture_hills_data.wad",
+    "level_45_icy_speedway_code.ovl",
+    "level_45_icy_speedway_data.wad",
+    "level_46_gulps_overlook_code.ovl",
+    "level_46_gulps_overlook_data.wad",
+    "level_50_winter_tundra_code.ovl",
+    "level_50_winter_tundra_data.wad",
+    "level_51_mystic_marsh_code.ovl",
+    "level_51_mystic_marsh_data.wad",
+    "level_52_cloud_temples_code.ovl",
+    "level_52_cloud_temples_data.wad",
+    "level_55_canyon_speedway_code.ovl",
+    "level_55_canyon_speedway_data.wad",
+    "level_61_robotica_farms_code.ovl",
+    "level_61_robotica_farms_data.wad",
+    "level_62_metropolis_code.ovl",
+    "level_62_metropolis_data.wad",
+    "level_65_dragon_shores_code.ovl",
+    "level_65_dragon_shores_data.wad",
+    "level_66_riptos_arena_code.ovl",
+    "level_66_riptos_arena_data.wad",
+];
+
+fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
+
+    match args.command {
+        SubCommand::Unpack { target_bin } => {
+            println!("Unpacking ISO");
+            Command::new("dumpsxiso")
+                .args(["-x", "extract", "-s", "out.xml"])
+                .arg(target_bin)
+                .output()?;
+
+            println!("Unpacking main WAD file");
+            let wad_file = ["extract", "WAD.WAD"].iter().collect();
+            let output_dir = ["extract", "WAD"].iter().collect();
+            let mut manifest = parse_wad(wad_file, output_dir)?;
+
+            println!("Renaming files");
+            for (i, wfile) in manifest.files.iter_mut().skip(14).take(29 * 2).enumerate() {
+                let mut new_name = wfile.clone();
+                new_name.set_file_name(LEVELS[i]);
+
+                fs::rename(&wfile, &new_name)?;
+
+                *wfile = new_name;
+            }
+
+            println!("Save WAD.WAD.json");
+            let was_wad_json =
+                File::create(["extract", "WAD.WAD.json"].iter().collect::<PathBuf>())?;
+
+            serde_json::to_writer_pretty(was_wad_json, &manifest)?;
+        }
+    }
+
+    Ok(())
 }
