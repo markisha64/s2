@@ -104,10 +104,15 @@ fn main() -> anyhow::Result<()> {
             let output_dir = ["extract", "WAD"].iter().collect();
             let mut manifest = parse_wad(wad_file, output_dir)?;
 
-            println!("Renaming files");
+            println!("Moving files");
+            let pb: PathBuf = ["extract", "WAD", "levels"].iter().collect();
+            fs::create_dir_all(pb)?;
+
             for (i, wfile) in manifest.files.iter_mut().skip(14).take(29 * 2).enumerate() {
                 let mut new_name = wfile.clone();
-                new_name.set_file_name(LEVELS[i]);
+                new_name.pop();
+                new_name.push("levels");
+                new_name.push(LEVELS[i]);
 
                 fs::rename(&wfile, &new_name)?;
 
@@ -133,7 +138,7 @@ fn main() -> anyhow::Result<()> {
 
             println!("Rebuild ISO");
             // make sure folder exists
-            fs::create_dir("out")?;
+            fs::create_dir_all("out")?;
 
             let out_b: PathBuf = ["out", format!("{}.bin", name).as_str()].iter().collect();
             let out_c: PathBuf = ["out", format!("{}.cue", name).as_str()].iter().collect();
