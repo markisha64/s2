@@ -5,7 +5,7 @@ use std::{
 };
 
 use clap::{Parser, Subcommand};
-use wad::parse_wad;
+use wad::{parse_wad, rebuild_wad};
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -19,6 +19,11 @@ enum SubCommand {
     Unpack {
         /// Target game bin file
         target_bin: PathBuf,
+    },
+    /// Rebuild iso
+    Repack {
+        /// Output folder
+        name: String,
     },
 }
 
@@ -114,6 +119,32 @@ fn main() -> anyhow::Result<()> {
                 File::create(["extract", "WAD.WAD.json"].iter().collect::<PathBuf>())?;
 
             serde_json::to_writer_pretty(was_wad_json, &manifest)?;
+        }
+        SubCommand::Repack { name } => {
+            println!("Rebuild WAD.WAD");
+            let manifest_pbuf: PathBuf = ["extract", "WAD.WAD.json"].iter().collect();
+
+            let manifest_file = File::open(manifest_pbuf)?;
+
+            let manifest = serde_json::from_reader(manifest_file)?;
+
+            let wad_wad = ["extract", "WAD.WAD"].iter().collect();
+            rebuild_wad(manifest, wad_wad)?;
+
+            println!("Rebuild ISO");
+            // make sure folder exists
+            fs::create_dir("out")?;
+
+            let out_b: PathBuf = ["out", format!("{}.bin", name).as_str()].iter().collect();
+            let out_c: PathBuf = ["out", format!("{}.cue", name).as_str()].iter().collect();
+
+            Command::new("mkpsxiso")
+                .arg("-o")
+                .arg(out_b)
+                .arg("-c")
+                .arg(out_c)
+                .arg("out.xml")
+                .output()?;
         }
     }
 
