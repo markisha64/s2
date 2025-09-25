@@ -117,6 +117,22 @@ fn main() -> anyhow::Result<()> {
                 fs::rename(&wfile, &new_name)?;
 
                 *wfile = new_name;
+
+                // level extract logic (unsure if ill even use)
+                // if LEVELS[i].ends_with(".wad") {
+                //     let mut output_dir = wfile.clone();
+                //     output_dir.pop();
+                //     output_dir.push(LEVELS[i].trim_end_matches(".wad"));
+
+                //     let level_manifest = parse_wad(wfile.clone(), output_dir.clone())?;
+
+                //     let mut level_json = output_dir.clone();
+                //     level_json.push("level.json");
+
+                //     let level_json_f = File::create(level_json)?;
+
+                //     serde_json::to_writer_pretty(level_json_f, &level_manifest)?;
+                // }
             }
 
             println!("Save WAD.WAD.json");
