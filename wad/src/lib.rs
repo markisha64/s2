@@ -1,10 +1,9 @@
 use std::{
-    fs::{File, create_dir_all},
-    io::{Read, Seek, copy},
+    fs::{File, create_dir_all, metadata},
+    io::{Read, Seek, Write as _, copy},
     path::PathBuf,
 };
 
-use anyhow::anyhow;
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
@@ -32,10 +31,6 @@ pub struct Manifest {
 }
 
 pub fn parse_wad(wad_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<Manifest> {
-    if !output_dir.is_dir() {
-        return Err(anyhow!("Output dir is not a dir"));
-    }
-
     let mut file = File::open(&wad_file)?;
     let mut header = WADHeader {
         files: [WADFile {
@@ -82,7 +77,7 @@ pub fn parse_wad(wad_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<Manif
 
         while remaining > 0 {
             let to_copy = remaining.min(1024);
-            let mut limited = file.by_ref().take(to_copy as u64);
+            let mut limited = Read::by_ref(&mut file).take(to_copy as u64);
 
             let written = copy(&mut limited, &mut dst_file)?;
 
@@ -98,4 +93,48 @@ pub fn parse_wad(wad_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<Manif
     }
 
     Ok(manifest)
+}
+
+pub fn rebuild_wad(manifest: Manifest, output_file: PathBuf) -> anyhow::Result<()> {
+    let mut header = WADHeader {
+        files: [WADFile {
+            offset: 0,
+            length: 0,
+        }; 256],
+    };
+
+    let meta = metadata(&manifest.files[0])?;
+
+    header.files[0].length = meta.len() as u32;
+    header.files[0].offset = 2048;
+
+    for i in 1..manifest.files.len().min(256) {
+        let meta = metadata(&manifest.files[i])?;
+
+        header.files[i].length = meta.len() as u32;
+        header.files[i].offset = header.files[i - 1].offset + header.files[i - 1].length;
+    }
+
+    let mut wad_file = File::create(output_file)?;
+
+    for wfile in header.files {
+        wad_file.write(&wfile.offset.to_le_bytes())?;
+        wad_file.write(&wfile.length.to_le_bytes())?;
+    }
+
+    for wfile in manifest.files {
+        let mut subfile = File::open(&wfile)?;
+
+        let mut limited = Read::by_ref(&mut subfile).take(1024);
+
+        let mut written = copy(&mut limited, &mut wad_file)?;
+
+        // copy full file
+        while written > 0 {
+            limited = Read::by_ref(&mut subfile).take(1024);
+            written = copy(&mut limited, &mut wad_file)?;
+        }
+    }
+
+    Ok(())
 }
