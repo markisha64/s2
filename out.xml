@@ -1,0 +1,35 @@
+<iso_project image_name="mkpsxiso.bin" cue_sheet="mkpsxiso.cue">
+    <track type="data">
+        <identifiers system="PLAYSTATION" application="PLAYSTATION" publisher="SCEA" creation_date="1999101110083100+36"/>
+        <license file="extract/license_data.dat"/>
+        <default_attributes gmt_offs="36" xa_attrib="32" xa_perm="1365" xa_gid="0" xa_uid="0"/>
+        <directory_tree>
+            <file name="SYSTEM.CNF" source="extract/SYSTEM.CNF" type="data"/>
+            <file name="SCUS_944.25" source="extract/SCUS_944.25" type="data"/>
+            <dummy sectors="301"/>
+            <file name="WAD.WAD" source="extract/WAD.WAD" type="data"/>
+            <dummy sectors="3116"/>
+            <file name="SPEECH.STR" source="extract/SPEECH.STR" type="mixed"/>
+            <dir name="KART" source="extract/KART">
+                <file name="KART.HWL" source="extract/KART/KART.HWL" type="data"/>
+                <file name="KARTDCH.BIN" source="extract/KART/KARTDCH.BIN" type="data"/>
+                <file name="KARTENG.BIN" source="extract/KART/KARTENG.BIN" type="data"/>
+                <file name="KARTFRN.BIN" source="extract/KART/KARTFRN.BIN" type="data"/>
+                <file name="KARTGRM.BIN" source="extract/KART/KARTGRM.BIN" type="data"/>
+                <file name="KARTITL.BIN" source="extract/KART/KARTITL.BIN" type="data"/>
+                <file name="KARTJPN.BIN" source="extract/KART/KARTJPN.BIN" type="data"/>
+                <file name="PSX.EXE" source="extract/KART/PSX.EXE" type="data"/>
+                <file name="SAMPLE1.VRM" source="extract/KART/SAMPLE1.VRM" type="data"/>
+                <file name="SAMPLE2.VRM" source="extract/KART/SAMPLE2.VRM" type="data"/>
+                <file name="SAMPLE3.VRM" source="extract/KART/SAMPLE3.VRM" type="data"/>
+                <file name="SAMPLE4.VRM" source="extract/KART/SAMPLE4.VRM" type="data"/>
+                <file name="SAMPLE5.VRM" source="extract/KART/SAMPLE5.VRM" type="data"/>
+                <file name="SAMPLER.BIG" source="extract/KART/SAMPLER.BIG" type="data"/>
+                <dir name="XA" source="extract/KART/XA">
+                    <file name="S00.XA" source="extract/KART/XA/S00.XA" type="mixed"/>
+                </dir>
+            </dir>
+            <file name="SPYRO2.TRD" source="extract/SPYRO2.TRD" type="data"/>
+        </directory_tree>
+    </track>
+</iso_project>

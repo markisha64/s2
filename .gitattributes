@@ -1,0 +1,5 @@
+extract/SPEECH.STR filter=lfs diff=lfs merge=lfs -text
+extract/WAD.WAD filter=lfs diff=lfs merge=lfs -text
+extract/KART/SAMPLER.BIG filter=lfs diff=lfs merge=lfs -text
+extract/KART/KART.HWL filter=lfs diff=lfs merge=lfs -text
+extract/KART/XA/S00.XA filter=lfs diff=lfs merge=lfs -text
