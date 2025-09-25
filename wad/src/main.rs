@@ -11,13 +11,19 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Unpack WAD file
     Unpack {
+        /// Target WAD file
         wad_file: PathBuf,
+        /// Extracted files dir
         output_dir: PathBuf,
+        /// Manifest file
         json_out: PathBuf,
     },
     Pack {
+        /// Manifest file
         json_in: PathBuf,
+        /// WAD output
         output_file: PathBuf,
     },
 }
