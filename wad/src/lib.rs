@@ -60,13 +60,12 @@ pub fn parse_wad(wad_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<Manif
 
     let mut file = File::open(&wad_file)?;
 
-    // skip header
-    file.seek(std::io::SeekFrom::Start(2048))?;
-
     for (i, wfile) in header.files.iter().enumerate() {
         if wfile.end() {
             break;
         }
+
+        file.seek(std::io::SeekFrom::Start(wfile.offset as u64))?;
 
         let mut dst = output_dir.clone();
         dst.push(format!("{}.bin", i));
