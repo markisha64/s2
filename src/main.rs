@@ -5,6 +5,7 @@ use std::{
 };
 
 use clap::{Parser, Subcommand};
+use level::parse_level;
 use wad::{parse_wad, rebuild_wad};
 
 #[derive(Parser, Debug)]
@@ -108,6 +109,7 @@ fn main() -> anyhow::Result<()> {
             let pb: PathBuf = ["extract", "WAD", "levels"].iter().collect();
             fs::create_dir_all(pb)?;
 
+            println!("Handling levels");
             for (i, wfile) in manifest.files.iter_mut().skip(14).take(29 * 2).enumerate() {
                 let mut new_name = wfile.clone();
                 new_name.pop();
@@ -119,20 +121,20 @@ fn main() -> anyhow::Result<()> {
                 *wfile = new_name;
 
                 // level extract logic (unsure if ill even use)
-                // if LEVELS[i].ends_with(".wad") {
-                //     let mut output_dir = wfile.clone();
-                //     output_dir.pop();
-                //     output_dir.push(LEVELS[i].trim_end_matches(".wad"));
+                if LEVELS[i].ends_with(".dat") {
+                    let mut output_dir = wfile.clone();
+                    output_dir.pop();
+                    output_dir.push(LEVELS[i].trim_end_matches(".dat"));
 
-                //     let level_manifest = parse_wad(wfile.clone(), output_dir.clone())?;
+                    let level_manifest = parse_level(wfile.clone(), output_dir.clone())?;
 
-                //     let mut level_json = output_dir.clone();
-                //     level_json.push("level.json");
+                    let mut level_json = output_dir.clone();
+                    level_json.push("level.json");
 
-                //     let level_json_f = File::create(level_json)?;
+                    let level_json_f = File::create(level_json)?;
 
-                //     serde_json::to_writer_pretty(level_json_f, &level_manifest)?;
-                // }
+                    serde_json::to_writer_pretty(level_json_f, &level_manifest)?;
+                }
             }
 
             println!("Save WAD.WAD.json");
