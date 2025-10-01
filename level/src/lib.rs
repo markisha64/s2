@@ -1,6 +1,6 @@
 use std::{
     fs::{File, create_dir_all},
-    io::{Read, Seek, copy},
+    io::{Read, Seek, Write, copy},
     path::PathBuf,
 };
 
@@ -21,12 +21,32 @@ pub struct LevelHeader {
 #[derive(Serialize, Deserialize)]
 pub struct LevelManifest {
     pub timestamp: DateTime<Local>,
-    pub tex_and_audio: PathBuf,
+    pub tex: PathBuf,
+    pub reverb: PathBuf,
+    pub audio_buffers: Vec<PathBuf>,
     pub collision_data: PathBuf,
     pub model: PathBuf,
     pub something: Vec<PathBuf>,
     pub some_offsets: Vec<u32>,
     pub model_indices: Vec<u16>,
+}
+
+fn copy_file(file: &mut File, dst_file: &mut File, mut remaining: u64) -> anyhow::Result<()> {
+    while remaining > 0 {
+        let to_copy = remaining.min(1024);
+        let mut limited = Read::by_ref(file).take(to_copy);
+
+        let written = copy(&mut limited, dst_file)?;
+
+        // EOF
+        if written == 0 {
+            break;
+        }
+
+        remaining -= written;
+    }
+
+    Ok(())
 }
 
 pub fn parse_level(level_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<LevelManifest> {
@@ -106,6 +126,66 @@ pub fn parse_level(level_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<L
 
     let mut file = File::open(&level_file)?;
 
+    file.seek(std::io::SeekFrom::Start(header.tex_and_audio.offset as u64))?;
+
+    let mut tex = output_dir.clone();
+    tex.push("tex.bin");
+
+    let mut dst_file = File::create(&tex)?;
+
+    // tex part
+    copy_file(&mut file, &mut dst_file, 512 * 1024)?;
+
+    file.seek(std::io::SeekFrom::Start(
+        header.tex_and_audio.offset as u64 + 512 * 1024,
+    ))?;
+
+    let mut reverb = output_dir.clone();
+    reverb.push("a_reverb.bin");
+
+    let mut dst_file = File::create(&reverb)?;
+
+    // reverb part
+    copy_file(&mut file, &mut dst_file, 24 * 1024)?;
+
+    let mut a_buffers = Vec::new();
+
+    for i in 0..8 {
+        let lb = i * 64 * 1024;
+        let len = (header.tex_and_audio.length - (lb + 512 * 1024 + 24 * 1024)).min(64 * 1024);
+
+        file.seek(std::io::SeekFrom::Start(
+            header.tex_and_audio.offset as u64 + 512 * 1024 + 24 * 1024 + lb as u64,
+        ))?;
+
+        if len == 0 {
+            break;
+        }
+
+        let mut buf = output_dir.clone();
+        buf.push(format!("a_buf_{i}.vag"));
+
+        let mut dst_file = File::create(&buf)?;
+
+        let mut vag_header = [0u8; 48];
+
+        vag_header[0..4].copy_from_slice("VAGp".as_bytes());
+        vag_header[4..8].copy_from_slice(&(0x20u32.to_be_bytes()));
+        vag_header[12..16].copy_from_slice(&(len.min(64 * 1024).to_be_bytes()));
+        vag_header[16..20].copy_from_slice(&(11025u32.to_be_bytes()));
+
+        dst_file.write(&vag_header)?;
+
+        // reverb part
+        copy_file(&mut file, &mut dst_file, len.min(64 * 1024) as u64)?;
+
+        a_buffers.push(buf);
+
+        if len < 64 * 1024 {
+            break;
+        }
+    }
+
     let mut make_file = |wfile: WADFile, name: &str| -> anyhow::Result<PathBuf> {
         file.seek(std::io::SeekFrom::Start(wfile.offset as u64))?;
 
@@ -114,26 +194,11 @@ pub fn parse_level(level_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<L
 
         let mut dst_file = File::create(&dst)?;
 
-        let mut remaining = wfile.length;
-
-        while remaining > 0 {
-            let to_copy = remaining.min(1024);
-            let mut limited = Read::by_ref(&mut file).take(to_copy as u64);
-
-            let written = copy(&mut limited, &mut dst_file)?;
-
-            // EOF
-            if written == 0 {
-                break;
-            }
-
-            remaining -= written as u32;
-        }
+        copy_file(&mut file, &mut dst_file, wfile.length as u64)?;
 
         Ok(dst)
     };
 
-    let tex_and_audio = make_file(header.tex_and_audio, "tex_and_audio.bin")?;
     let collision_data = make_file(header.collision_data, "collision_data.bin")?;
     let model = make_file(header.model, "model.bin")?;
 
@@ -143,7 +208,9 @@ pub fn parse_level(level_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<L
 
     Ok(LevelManifest {
         timestamp: Local::now(),
-        tex_and_audio,
+        tex,
+        reverb,
+        audio_buffers: a_buffers,
         collision_data,
         model,
         something,
