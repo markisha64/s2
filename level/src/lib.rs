@@ -21,7 +21,8 @@ pub struct LevelHeader {
 #[derive(Serialize, Deserialize)]
 pub struct LevelManifest {
     pub timestamp: DateTime<Local>,
-    pub tex: PathBuf,
+    pub tex_0: PathBuf,
+    pub tex_1: PathBuf,
     pub reverb: PathBuf,
     pub audio_buffers: Vec<PathBuf>,
     pub collision_data: PathBuf,
@@ -45,6 +46,37 @@ fn copy_file(file: &mut File, dst_file: &mut File, mut remaining: u64) -> anyhow
 
         remaining -= written;
     }
+
+    Ok(())
+}
+
+fn write_16bpp_tim_header(
+    dst_file: &mut File,
+    x: u16,
+    y: u16,
+    w: u16,
+    h: u16,
+) -> anyhow::Result<()> {
+    // TIM header for 16bpp, no CLUT
+    let magic: u32 = 0x10; // TIM file identifier
+    let flags: u32 = 0x02; // 16bpp, no CLUT
+
+    // Each pixel = 2 bytes, so data size = width * height * 2
+    // + 12 for the pixel block header (len + x + y + w + h)
+    let pixel_data_size: u32 = (w as u32 * h as u32 * 2) + 12;
+
+    // Write TIM magic and flags
+    dst_file.write_all(&magic.to_le_bytes())?;
+    dst_file.write_all(&flags.to_le_bytes())?;
+
+    // Write pixel block size
+    dst_file.write_all(&pixel_data_size.to_le_bytes())?;
+
+    // X, Y, Width, Height (all little-endian 16-bit)
+    dst_file.write_all(&x.to_le_bytes())?; // X
+    dst_file.write_all(&y.to_le_bytes())?; // Y
+    dst_file.write_all(&w.to_le_bytes())?; // Width in pixels
+    dst_file.write_all(&h.to_le_bytes())?; // Height in pixels
 
     Ok(())
 }
@@ -128,13 +160,25 @@ pub fn parse_level(level_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<L
 
     file.seek(std::io::SeekFrom::Start(header.tex_and_audio.offset as u64))?;
 
-    let mut tex = output_dir.clone();
-    tex.push("tex.bin");
+    let mut tex_0 = output_dir.clone();
+    tex_0.push("tex_0.tim");
 
-    let mut dst_file = File::create(&tex)?;
+    let mut dst_file = File::create(&tex_0)?;
+
+    write_16bpp_tim_header(&mut dst_file, 512, 0, 512, 256)?;
 
     // tex part
-    copy_file(&mut file, &mut dst_file, 512 * 1024)?;
+    copy_file(&mut file, &mut dst_file, 256 * 1024)?;
+
+    let mut tex_1 = output_dir.clone();
+    tex_1.push("tex_1.tim");
+
+    let mut dst_file = File::create(&tex_1)?;
+
+    write_16bpp_tim_header(&mut dst_file, 512, 256, 512, 256)?;
+
+    // tex part
+    copy_file(&mut file, &mut dst_file, 256 * 1024)?;
 
     file.seek(std::io::SeekFrom::Start(
         header.tex_and_audio.offset as u64 + 512 * 1024,
@@ -208,7 +252,8 @@ pub fn parse_level(level_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<L
 
     Ok(LevelManifest {
         timestamp: Local::now(),
-        tex,
+        tex_0,
+        tex_1,
         reverb,
         audio_buffers: a_buffers,
         collision_data,
