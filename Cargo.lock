@@ -150,6 +150,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b94f61472cee1439c0b966b47e3aca9ae07e45d070759512cd390ea2bebc6675"
 
 [[package]]
+name = "collision"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "level",
+ "serde",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -304,6 +314,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "collision",
  "level",
  "serde",
  "serde_json",

@@ -5,6 +5,7 @@ use std::{
 };
 
 use clap::{Parser, Subcommand};
+use collision::parse_colission;
 use level::parse_level;
 use wad::{parse_wad, rebuild_wad};
 
@@ -134,6 +135,10 @@ fn main() -> anyhow::Result<()> {
                     let level_json_f = File::create(level_json)?;
 
                     serde_json::to_writer_pretty(level_json_f, &level_manifest)?;
+
+                    output_dir.push("colission");
+
+                    parse_colission(level_manifest.collision_data, output_dir)?;
                 }
             }
 
