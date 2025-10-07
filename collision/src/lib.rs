@@ -35,6 +35,10 @@ pub struct ColissionTypes {
     pub collision_types_len: u32,
 }
 
+pub struct ColissionSection7 {
+    pub section_8_offset: u32,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct CollisionManifest {}
 
@@ -188,8 +192,32 @@ pub fn parse_colission(
     copy_file(
         &mut file,
         &mut colission_types_file,
-        colission_types.section_7_offset as u64 - 4,
+        colission_types.section_7_offset as u64 - 8,
     )?;
+
+    file.read_exact(&mut buffer_0)?;
+
+    let section_7 = ColissionSection7 {
+        section_8_offset: u32::from_le_bytes(buffer_0),
+    };
+
+    let mut section_7_pb = output_dir.clone();
+    section_7_pb.push("section_7.dat");
+
+    let mut section_7_file = File::create(section_7_pb)?;
+
+    copy_file(
+        &mut file,
+        &mut section_7_file,
+        section_7.section_8_offset as u64 - 4,
+    )?;
+
+    let mut vec_3_pb = output_dir.clone();
+    vec_3_pb.push("vec_3.dat");
+
+    let mut vec_3_file = File::create(vec_3_pb)?;
+
+    copy_file(&mut file, &mut vec_3_file, 12)?;
 
     let mut tail = output_dir.clone();
     tail.push("tail.bin");
