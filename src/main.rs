@@ -5,7 +5,7 @@ use std::{
 };
 
 use clap::{Parser, Subcommand};
-use collision::parse_colission;
+use collision::parse_collision;
 use level::parse_level;
 use wad::{parse_wad, rebuild_wad};
 
@@ -138,7 +138,7 @@ fn main() -> anyhow::Result<()> {
 
                     output_dir.push("colission");
 
-                    parse_colission(level_manifest.collision_data, output_dir)?;
+                    parse_collision(level_manifest.collision_data, output_dir)?;
                 }
             }
 

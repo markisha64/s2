@@ -7,36 +7,50 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 // section 0
-pub struct ColissionHeader {
+pub struct CollisionHeader {
     pub section_1_offset: u32,
     pub section_0_data_len: u32,
 }
 
-pub struct ColissionSection1 {
+pub struct CollisionSection1 {
     pub section_3_offset: u32,
     pub section_2_offset: u32,
 }
 
-pub struct ColissionSection2 {
+pub struct CollisionSection2 {
     pub section_2_data_len: u32,
     pub section_4_offset: u32,
 }
 
-pub struct ColissionSection3 {
+pub struct CollisionSection3 {
     pub section_5_offset: u32,
 }
 
-pub struct ColissionSection5 {
+pub struct CollisionSection5 {
     pub collision_types_offset: u32,
 }
 
-pub struct ColissionTypes {
+pub struct CollisionTypes {
     pub section_7_offset: u32,
     pub collision_types_len: u32,
 }
 
-pub struct ColissionSection7 {
+pub struct CollisionSection7 {
     pub section_8_offset: u32,
+}
+
+#[derive(Debug)]
+pub struct CollisionSection8 {
+    pub section_9_offset: u32,
+    pub triangle_count: u32,
+    pub idfk_offset: u32,
+    pub unk_0: u32,
+    pub unk_1_offset: u32,
+    pub unk_2_offset: u32,
+    pub triangles_offset: u32,
+    pub collision_flags_offset: u32,
+    pub unk_3_offset: u32,
+    pub unk_4_offset: u32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -60,11 +74,11 @@ fn copy_file(file: &mut File, dst_file: &mut File, mut remaining: u64) -> anyhow
     Ok(())
 }
 
-pub fn parse_colission(
-    colission_file: PathBuf,
+pub fn parse_collision(
+    collision_file: PathBuf,
     output_dir: PathBuf,
 ) -> anyhow::Result<CollisionManifest> {
-    let mut file = File::open(&colission_file)?;
+    let mut file = File::open(&collision_file)?;
     create_dir_all(&output_dir)?;
 
     let mut buffer_0 = [0u8; 4];
@@ -73,7 +87,7 @@ pub fn parse_colission(
     file.read_exact(&mut buffer_0)?;
     file.read_exact(&mut buffer_1)?;
 
-    let header = ColissionHeader {
+    let header = CollisionHeader {
         section_1_offset: u32::from_le_bytes(buffer_0),
         section_0_data_len: u32::from_le_bytes(buffer_1),
     };
@@ -92,7 +106,7 @@ pub fn parse_colission(
     file.read_exact(&mut buffer_0)?;
     file.read_exact(&mut buffer_1)?;
 
-    let section_1 = ColissionSection1 {
+    let section_1 = CollisionSection1 {
         section_3_offset: u32::from_le_bytes(buffer_0),
         section_2_offset: u32::from_le_bytes(buffer_1),
     };
@@ -113,7 +127,7 @@ pub fn parse_colission(
     file.read_exact(&mut buffer_0)?;
     file.read_exact(&mut buffer_1)?;
 
-    let section_2 = ColissionSection2 {
+    let section_2 = CollisionSection2 {
         section_2_data_len: u32::from_le_bytes(buffer_0),
         section_4_offset: u32::from_le_bytes(buffer_1),
     };
@@ -144,7 +158,7 @@ pub fn parse_colission(
 
     file.read_exact(&mut buffer_0)?;
 
-    let section_3 = ColissionSection3 {
+    let section_3 = CollisionSection3 {
         section_5_offset: u32::from_le_bytes(buffer_0),
     };
 
@@ -161,7 +175,7 @@ pub fn parse_colission(
 
     file.read_exact(&mut buffer_0)?;
 
-    let section_5 = ColissionSection5 {
+    let section_5 = CollisionSection5 {
         collision_types_offset: u32::from_le_bytes(buffer_0),
     };
 
@@ -179,25 +193,25 @@ pub fn parse_colission(
     file.read_exact(&mut buffer_0)?;
     file.read_exact(&mut buffer_1)?;
 
-    let colission_types = ColissionTypes {
+    let collision_types = CollisionTypes {
         section_7_offset: u32::from_le_bytes(buffer_0),
         collision_types_len: u32::from_le_bytes(buffer_1),
     };
 
-    let mut colission_types_pb = output_dir.clone();
-    colission_types_pb.push("colission_types.dat");
+    let mut collision_types_pb = output_dir.clone();
+    collision_types_pb.push("collision_types.dat");
 
-    let mut colission_types_file = File::create(colission_types_pb)?;
+    let mut collision_types_file = File::create(collision_types_pb)?;
 
     copy_file(
         &mut file,
-        &mut colission_types_file,
-        colission_types.section_7_offset as u64 - 8,
+        &mut collision_types_file,
+        collision_types.section_7_offset as u64 - 8,
     )?;
 
     file.read_exact(&mut buffer_0)?;
 
-    let section_7 = ColissionSection7 {
+    let section_7 = CollisionSection7 {
         section_8_offset: u32::from_le_bytes(buffer_0),
     };
 
@@ -218,6 +232,75 @@ pub fn parse_colission(
     let mut vec_3_file = File::create(vec_3_pb)?;
 
     copy_file(&mut file, &mut vec_3_file, 12)?;
+
+    file.read_exact(&mut buffer_0)?;
+    file.read_exact(&mut buffer_1)?;
+
+    let section_9_offset = u32::from_le_bytes(buffer_0);
+    let triangle_count = u32::from_le_bytes(buffer_1);
+
+    file.read_exact(&mut buffer_0)?;
+    file.read_exact(&mut buffer_1)?;
+
+    let idfk_offset = u32::from_le_bytes(buffer_0);
+    let unk_0 = u32::from_le_bytes(buffer_1);
+
+    file.read_exact(&mut buffer_0)?;
+    file.read_exact(&mut buffer_1)?;
+
+    let unk_1_offset = u32::from_le_bytes(buffer_0);
+    let unk_2_offset = u32::from_le_bytes(buffer_1);
+
+    file.read_exact(&mut buffer_0)?;
+    file.read_exact(&mut buffer_1)?;
+
+    let triangles_offset = u32::from_le_bytes(buffer_0);
+    let collision_flags_offset = u32::from_le_bytes(buffer_1);
+
+    file.read_exact(&mut buffer_0)?;
+    file.read_exact(&mut buffer_1)?;
+
+    let section_8 = CollisionSection8 {
+        section_9_offset,
+        triangle_count,
+        idfk_offset,
+        unk_0,
+        unk_1_offset,
+        unk_2_offset,
+        triangles_offset,
+        collision_flags_offset,
+        unk_3_offset: u32::from_le_bytes(buffer_0),
+        unk_4_offset: u32::from_le_bytes(buffer_1),
+    };
+
+    let mut files = [
+        ("section_8_idfk.bin", idfk_offset),
+        ("section_8_unk_0.bin", unk_0),
+        ("section_8_unk_1.bin", unk_1_offset),
+        ("section_8_unk_2.bin", unk_2_offset),
+        ("section_8_triangles.bin", triangles_offset),
+        ("section_8_collision_flags.bin", collision_flags_offset),
+        ("section_8_unk_3.bin", section_8.unk_3_offset),
+        ("section_8_unk_4.bin", section_8.unk_4_offset),
+        ("", section_9_offset),
+    ];
+    files.sort_by(|(_, a), (_, b)| a.cmp(b));
+
+    for x in files.windows(2) {
+        let f1 = x[0];
+        let f2 = x[1];
+
+        if f1.1 == 0 {
+            continue;
+        }
+
+        let mut ff_pb = output_dir.clone();
+        ff_pb.push(f1.0);
+
+        let mut ff_file = File::create(ff_pb)?;
+
+        copy_file(&mut file, &mut ff_file, (f2.1 - f1.1) as u64)?;
+    }
 
     let mut tail = output_dir.clone();
     tail.push("tail.bin");
