@@ -53,6 +53,15 @@ pub struct CollisionSection8 {
     pub unk_4_offset: u32,
 }
 
+pub struct CollisionSection9 {
+    pub section_10_offset: u32,
+}
+
+pub struct CollisionSection10 {
+    pub section_11_offset: u32,
+    pub section_10_data_len: u32,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct CollisionManifest {}
 
@@ -282,7 +291,7 @@ pub fn parse_collision(
         ("section_8_collision_flags.bin", collision_flags_offset),
         ("section_8_unk_3.bin", section_8.unk_3_offset),
         ("section_8_unk_4.bin", section_8.unk_4_offset),
-        ("", section_9_offset),
+        ("", section_9_offset - 4),
     ];
     files.sort_by(|(_, a), (_, b)| a.cmp(b));
 
@@ -301,6 +310,42 @@ pub fn parse_collision(
 
         copy_file(&mut file, &mut ff_file, (f2.1 - f1.1) as u64)?;
     }
+
+    file.read_exact(&mut buffer_0)?;
+
+    let section_9 = CollisionSection9 {
+        section_10_offset: u32::from_le_bytes(buffer_0),
+    };
+
+    let mut section_9_pb = output_dir.clone();
+    section_9_pb.push("section_9.dat");
+
+    let mut section_9_file = File::create(section_9_pb)?;
+
+    copy_file(
+        &mut file,
+        &mut section_9_file,
+        section_9.section_10_offset as u64 - 4,
+    )?;
+
+    file.read_exact(&mut buffer_0)?;
+    file.read_exact(&mut buffer_1)?;
+
+    let section_10 = CollisionSection10 {
+        section_11_offset: u32::from_le_bytes(buffer_0),
+        section_10_data_len: u32::from_le_bytes(buffer_1),
+    };
+
+    let mut section_10_pb = output_dir.clone();
+    section_10_pb.push("section_10.dat");
+
+    let mut section_10_file = File::create(section_10_pb)?;
+
+    copy_file(
+        &mut file,
+        &mut section_10_file,
+        section_10.section_11_offset as u64 - 8,
+    )?;
 
     let mut tail = output_dir.clone();
     tail.push("tail.bin");
