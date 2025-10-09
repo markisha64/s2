@@ -72,21 +72,9 @@ pub fn parse_wad(wad_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<Manif
 
         let mut dst_file = File::create(&dst)?;
 
-        let mut remaining = wfile.length;
+        let mut limited = Read::by_ref(&mut file).take(wfile.length as u64);
 
-        while remaining > 0 {
-            let to_copy = remaining.min(1024);
-            let mut limited = Read::by_ref(&mut file).take(to_copy as u64);
-
-            let written = copy(&mut limited, &mut dst_file)?;
-
-            // EOF
-            if written == 0 {
-                break;
-            }
-
-            remaining -= written as u32;
-        }
+        copy(&mut limited, &mut dst_file)?;
 
         manifest.files.push(dst);
     }

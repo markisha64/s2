@@ -32,20 +32,10 @@ pub struct LevelManifest {
     pub model_indices: Vec<u16>,
 }
 
-fn copy_file(file: &mut File, dst_file: &mut File, mut remaining: u64) -> anyhow::Result<()> {
-    while remaining > 0 {
-        let to_copy = remaining.min(1024);
-        let mut limited = Read::by_ref(file).take(to_copy);
+fn copy_file(file: &mut File, dst_file: &mut File, remaining: u64) -> anyhow::Result<()> {
+    let mut limited = Read::by_ref(file).take(remaining);
 
-        let written = copy(&mut limited, dst_file)?;
-
-        // EOF
-        if written == 0 {
-            break;
-        }
-
-        remaining -= written;
-    }
+    copy(&mut limited, dst_file)?;
 
     Ok(())
 }

@@ -62,23 +62,23 @@ pub struct CollisionSection10 {
     pub section_10_data_len: u32,
 }
 
+pub struct CollisionSection11 {
+    pub section_12_offset: u32,
+    pub section_11_data_len: u32,
+}
+
+pub struct CollisionSection12 {
+    pub section_13_offset: u32,
+    pub section_12_data_len: u32,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct CollisionManifest {}
 
-fn copy_file(file: &mut File, dst_file: &mut File, mut remaining: u64) -> anyhow::Result<()> {
-    while remaining > 0 {
-        let to_copy = remaining.min(1024);
-        let mut limited = Read::by_ref(file).take(to_copy);
+fn copy_file(file: &mut File, dst_file: &mut File, remaining: u64) -> anyhow::Result<()> {
+    let mut limited = Read::by_ref(file).take(remaining);
 
-        let written = copy(&mut limited, dst_file)?;
-
-        // EOF
-        if written == 0 {
-            break;
-        }
-
-        remaining -= written;
-    }
+    copy(&mut limited, dst_file)?;
 
     Ok(())
 }
@@ -345,6 +345,44 @@ pub fn parse_collision(
         &mut file,
         &mut section_10_file,
         section_10.section_11_offset as u64 - 8,
+    )?;
+
+    file.read_exact(&mut buffer_0)?;
+    file.read_exact(&mut buffer_1)?;
+
+    let section_11 = CollisionSection11 {
+        section_12_offset: u32::from_le_bytes(buffer_0),
+        section_11_data_len: u32::from_le_bytes(buffer_1),
+    };
+
+    let mut section_11_pb = output_dir.clone();
+    section_11_pb.push("section_11.dat");
+
+    let mut section_11_file = File::create(section_11_pb)?;
+
+    copy_file(
+        &mut file,
+        &mut section_11_file,
+        section_11.section_12_offset as u64 - 8,
+    )?;
+
+    file.read_exact(&mut buffer_0)?;
+    file.read_exact(&mut buffer_1)?;
+
+    let section_12 = CollisionSection12 {
+        section_13_offset: u32::from_le_bytes(buffer_0),
+        section_12_data_len: u32::from_le_bytes(buffer_1),
+    };
+
+    let mut section_12_pb = output_dir.clone();
+    section_12_pb.push("section_12.dat");
+
+    let mut section_12_file = File::create(section_12_pb)?;
+
+    copy_file(
+        &mut file,
+        &mut section_12_file,
+        section_12.section_13_offset as u64 - 8,
     )?;
 
     let mut tail = output_dir.clone();
