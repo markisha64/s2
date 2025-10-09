@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace]
-members = [ "collision", "level",
+members = [ "collision", "level", "triangles",
   "wad"
 ]
 
@@ -15,4 +15,5 @@ collision = { version = "0.1.0", path = "collision" }
 level = { version = "0.1.0", path = "level" }
 serde = { version = "1.0.226", features = ["derive"] }
 serde_json = "1.0.145"
+triangles = { version = "0.1.0", path = "triangles" }
 wad = { version = "0.1.0", path = "wad" }

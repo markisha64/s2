@@ -7,6 +7,7 @@ use std::{
 use clap::{Parser, Subcommand};
 use collision::parse_collision;
 use level::parse_level;
+use triangles::convert;
 use wad::{parse_wad, rebuild_wad};
 
 #[derive(Parser, Debug)]
@@ -121,7 +122,6 @@ fn main() -> anyhow::Result<()> {
 
                 *wfile = new_name;
 
-                // level extract logic (unsure if ill even use)
                 if LEVELS[i].ends_with(".dat") {
                     let mut output_dir = wfile.clone();
                     output_dir.pop();
@@ -138,7 +138,11 @@ fn main() -> anyhow::Result<()> {
 
                     output_dir.push("colission");
 
-                    parse_collision(level_manifest.collision_data, output_dir)?;
+                    parse_collision(level_manifest.collision_data, output_dir.clone())?;
+
+                    output_dir.push("section_8_triangles.bin");
+
+                    convert(output_dir)?;
                 }
             }
 

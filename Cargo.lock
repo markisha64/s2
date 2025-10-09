@@ -318,6 +318,7 @@ dependencies = [
  "level",
  "serde",
  "serde_json",
+ "triangles",
  "wad",
 ]
 
@@ -385,6 +386,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "triangles"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
 ]
 
 [[package]]
