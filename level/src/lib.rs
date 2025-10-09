@@ -32,7 +32,7 @@ pub struct LevelManifest {
     pub model_indices: Vec<u16>,
 }
 
-fn copy_file(file: &mut File, dst_file: &mut File, remaining: u64) -> anyhow::Result<()> {
+fn copy_limited(file: &mut File, dst_file: &mut File, remaining: u64) -> anyhow::Result<()> {
     let mut limited = Read::by_ref(file).take(remaining);
 
     copy(&mut limited, dst_file)?;
@@ -158,7 +158,7 @@ pub fn parse_level(level_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<L
     write_16bpp_tim_header(&mut dst_file, 512, 0, 512, 256)?;
 
     // tex part
-    copy_file(&mut file, &mut dst_file, 256 * 1024)?;
+    copy_limited(&mut file, &mut dst_file, 256 * 1024)?;
 
     let mut tex_1 = output_dir.clone();
     tex_1.push("tex_1.tim");
@@ -168,7 +168,7 @@ pub fn parse_level(level_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<L
     write_16bpp_tim_header(&mut dst_file, 512, 256, 512, 256)?;
 
     // tex part
-    copy_file(&mut file, &mut dst_file, 256 * 1024)?;
+    copy_limited(&mut file, &mut dst_file, 256 * 1024)?;
 
     file.seek(std::io::SeekFrom::Start(
         header.tex_and_audio.offset as u64 + 512 * 1024,
@@ -180,7 +180,7 @@ pub fn parse_level(level_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<L
     let mut dst_file = File::create(&reverb)?;
 
     // reverb part
-    copy_file(&mut file, &mut dst_file, 24 * 1024)?;
+    copy_limited(&mut file, &mut dst_file, 24 * 1024)?;
 
     let mut a_buffers = Vec::new();
 
@@ -211,7 +211,7 @@ pub fn parse_level(level_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<L
         dst_file.write(&vag_header)?;
 
         // reverb part
-        copy_file(&mut file, &mut dst_file, len.min(64 * 1024) as u64)?;
+        copy_limited(&mut file, &mut dst_file, len.min(64 * 1024) as u64)?;
 
         a_buffers.push(buf);
 
@@ -228,7 +228,7 @@ pub fn parse_level(level_file: PathBuf, output_dir: PathBuf) -> anyhow::Result<L
 
         let mut dst_file = File::create(&dst)?;
 
-        copy_file(&mut file, &mut dst_file, wfile.length as u64)?;
+        copy_limited(&mut file, &mut dst_file, wfile.length as u64)?;
 
         Ok(dst)
     };

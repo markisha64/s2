@@ -72,10 +72,14 @@ pub struct CollisionSection12 {
     pub section_12_data_len: u32,
 }
 
+pub struct CollisionSection14 {
+    pub section_15_offset: u32,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct CollisionManifest {}
 
-fn copy_file(file: &mut File, dst_file: &mut File, remaining: u64) -> anyhow::Result<()> {
+fn copy_limited(file: &mut File, dst_file: &mut File, remaining: u64) -> anyhow::Result<()> {
     let mut limited = Read::by_ref(file).take(remaining);
 
     copy(&mut limited, dst_file)?;
@@ -106,7 +110,7 @@ pub fn parse_collision(
 
     let mut section_0_file = File::create(section_0_pb)?;
 
-    copy_file(
+    copy_limited(
         &mut file,
         &mut section_0_file,
         header.section_1_offset as u64 - 8,
@@ -127,7 +131,7 @@ pub fn parse_collision(
 
     let mut section_1_file = File::create(section_1_pb)?;
 
-    copy_file(
+    copy_limited(
         &mut file,
         &mut section_1_file,
         section_1_data_len as u64 * 28,
@@ -146,7 +150,7 @@ pub fn parse_collision(
 
     let mut section_2_offsets_file = File::create(section_2_offsets_pb)?;
 
-    copy_file(
+    copy_limited(
         &mut file,
         &mut section_2_offsets_file,
         section_2.section_2_data_len as u64 * 4,
@@ -163,7 +167,7 @@ pub fn parse_collision(
 
     let mut section_2_file = File::create(section_2_pb)?;
 
-    copy_file(&mut file, &mut section_2_file, section_2_data_len as u64)?;
+    copy_limited(&mut file, &mut section_2_file, section_2_data_len as u64)?;
 
     file.read_exact(&mut buffer_0)?;
 
@@ -176,7 +180,7 @@ pub fn parse_collision(
 
     let mut section_3_file = File::create(section_3_pb)?;
 
-    copy_file(
+    copy_limited(
         &mut file,
         &mut section_3_file,
         section_3.section_5_offset as u64 - 4,
@@ -193,7 +197,7 @@ pub fn parse_collision(
 
     let mut section_5_file = File::create(section_5_pb)?;
 
-    copy_file(
+    copy_limited(
         &mut file,
         &mut section_5_file,
         section_5.collision_types_offset as u64 - 4,
@@ -212,7 +216,7 @@ pub fn parse_collision(
 
     let mut collision_types_file = File::create(collision_types_pb)?;
 
-    copy_file(
+    copy_limited(
         &mut file,
         &mut collision_types_file,
         collision_types.section_7_offset as u64 - 8,
@@ -229,7 +233,7 @@ pub fn parse_collision(
 
     let mut section_7_file = File::create(section_7_pb)?;
 
-    copy_file(
+    copy_limited(
         &mut file,
         &mut section_7_file,
         section_7.section_8_offset as u64 - 4,
@@ -240,7 +244,7 @@ pub fn parse_collision(
 
     let mut vec_3_file = File::create(vec_3_pb)?;
 
-    copy_file(&mut file, &mut vec_3_file, 12)?;
+    copy_limited(&mut file, &mut vec_3_file, 12)?;
 
     file.read_exact(&mut buffer_0)?;
     file.read_exact(&mut buffer_1)?;
@@ -308,7 +312,7 @@ pub fn parse_collision(
 
         let mut ff_file = File::create(ff_pb)?;
 
-        copy_file(&mut file, &mut ff_file, (f2.1 - f1.1) as u64)?;
+        copy_limited(&mut file, &mut ff_file, (f2.1 - f1.1) as u64)?;
     }
 
     file.read_exact(&mut buffer_0)?;
@@ -322,7 +326,7 @@ pub fn parse_collision(
 
     let mut section_9_file = File::create(section_9_pb)?;
 
-    copy_file(
+    copy_limited(
         &mut file,
         &mut section_9_file,
         section_9.section_10_offset as u64 - 4,
@@ -341,7 +345,7 @@ pub fn parse_collision(
 
     let mut section_10_file = File::create(section_10_pb)?;
 
-    copy_file(
+    copy_limited(
         &mut file,
         &mut section_10_file,
         section_10.section_11_offset as u64 - 8,
@@ -360,7 +364,7 @@ pub fn parse_collision(
 
     let mut section_11_file = File::create(section_11_pb)?;
 
-    copy_file(
+    copy_limited(
         &mut file,
         &mut section_11_file,
         section_11.section_12_offset as u64 - 8,
@@ -379,10 +383,34 @@ pub fn parse_collision(
 
     let mut section_12_file = File::create(section_12_pb)?;
 
-    copy_file(
+    copy_limited(
         &mut file,
         &mut section_12_file,
         section_12.section_13_offset as u64 - 8,
+    )?;
+
+    let mut section_13_pb = output_dir.clone();
+    section_13_pb.push("section_13.dat");
+
+    let mut section_13_file = File::create(section_13_pb)?;
+
+    copy_limited(&mut file, &mut section_13_file, 32)?;
+
+    file.read_exact(&mut buffer_0)?;
+
+    let section_14 = CollisionSection14 {
+        section_15_offset: u32::from_le_bytes(buffer_0),
+    };
+
+    let mut section_14_pb = output_dir.clone();
+    section_14_pb.push("section_14.dat");
+
+    let mut section_14_file = File::create(section_14_pb)?;
+
+    copy_limited(
+        &mut file,
+        &mut section_14_file,
+        section_14.section_15_offset as u64 - 4,
     )?;
 
     let mut tail = output_dir.clone();
@@ -391,7 +419,7 @@ pub fn parse_collision(
     let mut tail_file = File::create(tail)?;
 
     // copy to end
-    copy_file(&mut file, &mut tail_file, 999999999)?;
+    copy(&mut file, &mut tail_file)?;
 
     Ok(CollisionManifest {})
 }
