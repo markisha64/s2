@@ -7,7 +7,6 @@ use std::{
 use clap::{Parser, Subcommand};
 use collision::parse_collision;
 use level::parse_level;
-use triangles::convert;
 use wad::{parse_wad, rebuild_wad};
 
 #[derive(Parser, Debug)]
@@ -139,10 +138,6 @@ fn main() -> anyhow::Result<()> {
                     output_dir.push("colission");
 
                     parse_collision(level_manifest.collision_data, output_dir.clone())?;
-
-                    output_dir.push("section_8_triangles.bin");
-
-                    convert(output_dir)?;
                 }
             }
 
